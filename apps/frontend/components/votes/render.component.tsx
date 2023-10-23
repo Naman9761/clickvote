@@ -20,6 +20,7 @@ const options = {
   ],
   range: [{ name: 'Stars', component: RangeStyle, componentName: 'RangeStyle' }],
 };
+
 const componentConverter = (
   style: any,
   info: VoteValues,
@@ -77,25 +78,28 @@ function RenderComponent () {
 };
 
 export const RenderComponent: FC<VoteValues> = (params) => {
-  const [style, setStyle] = useState<any>(undefined);
-  const [currentOption, setCurrentOption] = useState(
-    options[params.type as 'single' | 'range'][0]
-  );
+  const [style, setStyle] = useState<any>(() => undefined);
+  const { user } = useUserContext();
+
+  const { type } = params;
+  const [currentOption, setCurrentOption] = useState(options[type as 'single' | 'range'][0]);
 
   useEffect(() => {
-    import('react-syntax-highlighter/dist/esm/styles/prism/funky').then((mod) =>
-      setStyle(mod.default)
-    );
-  });
-  const { user } = useUserContext();
-  const info = useMemo(() => {
+    const fetchStyle = async () => {
+      const mod = await import('react-syntax-highlighter/dist/esm/styles/prism/funky');
+      setStyle(mod.default);
+    };
+    fetchStyle();
+  }, []);
+
+  const { template, component } = useMemo(() => {
     return componentConverter(style, params, user, currentOption.component, currentOption.componentName);
   }, [params, user, style, currentOption]);
 
   return (
     <div className="ml-10 flex flex-col">
       <div className="flex space-x-3 mb-4">
-        {options[params.type as 'single' | 'range'].map((p) => (
+        {options[type as 'single' | 'range'].map((p) => (
           <Button
             className={clsx(
               'flex-1 hover:bg-[#22252D]',
@@ -117,11 +121,9 @@ export const RenderComponent: FC<VoteValues> = (params) => {
         </SyntaxHighlighter>
       </div>
       <div>Code Snippet:</div>
-      <div className="border border-white/50 rounded-xl my-5">
-        {info.template}
-      </div>
+      <div className="border border-white/50 rounded-xl my-5">{template}</div>
       <div className="mb-5">Example:</div>
-      {info.component}
+      {component}
     </div>
   );
 };
